@@ -1,3 +1,4 @@
+import { Application, Request } from 'express';
 import { MongoClient } from 'mongodb';
 
 export async function connect(url: string, appName: string)

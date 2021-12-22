@@ -1,27 +1,36 @@
-import express, { ErrorRequestHandler, NextFunction, Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import morgan from 'morgan';
+import cors from 'cors';
 import httpErrors, { HttpError } from 'http-errors';
 import { formatError, formatMongoError } from './utils/format';
 import { MongoError } from 'mongodb';
 import { connect } from './db/mongodb';
+import schoolRouter from './resources/school/school.router';
+import { setAppName, setMdb } from './utils/appVars';
 
+//Preconfig
 dotenv.config();
 const port = parseInt(process.env.PORT as string) || 3000;
-const appName = require('../package.json').name;
-
 const app = express();
-
 app.disable('x-powered-by');
-app.use(morgan("dev"));
+
+//Middle
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(morgan("dev"));
 
-app.get('/', async (_, res) =>
+app.get("/", async (req, res, next) =>
 {
-  res.status(200).send("마이크 테스트");
+  res.status(200).json({ test: 123 });
 });
 
+
+//Router
+app.use('/api/school', schoolRouter);
+
+//Error Handle
 app.use(RouteNotFound);
 app.use(HandleGlobalErrors);
 
@@ -35,7 +44,12 @@ export async function start()
       console.error("There's no mdb url, please check server env!");
       return;
     }
-    await connect(url, appName);
+
+    const appName = require('../package.json').name;
+    setAppName(app, appName);
+    const client = await connect(url, appName);
+    setMdb(app, client);
+
     app.listen(port, () =>
     {
       console.log(`listening on ${port}`);
@@ -64,7 +78,8 @@ function RouteNotFound(req: Request, res: Response, next: NextFunction)
   next(httpErrors(404, `${req.originalUrl} Can't be Found`));
 }
 
-function HandleGlobalErrors(err: unknown, req: Request, res: Response, next: NextFunction) 
+//TODO -  mongodb 접속 에러 처리 추가
+function HandleGlobalErrors(err: Error, req: Request, res: Response, next: NextFunction) 
 {
   const resBody = {};
   let status = 500;
@@ -80,6 +95,12 @@ function HandleGlobalErrors(err: unknown, req: Request, res: Response, next: Nex
   else if (err instanceof MongoError)
   {
     console.error(formatMongoError(err));
+  }else if(err instanceof Error){
+    console.error(formatError(err));
+  }
+  else{
+    const errNever : never =err;
+    console.error("error should be error, not never!");
   }
 
   res.status(status);
