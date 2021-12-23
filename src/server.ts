@@ -81,7 +81,7 @@ function RouteNotFound(req: Request, res: Response, next: NextFunction)
 //TODO -  mongodb 접속 에러 처리 추가
 function HandleGlobalErrors(err: Error, req: Request, res: Response, next: NextFunction) 
 {
-  const resBody = {};
+  let resBody = undefined;
   let status = 500;
   if (err instanceof HttpError)
   {
@@ -95,14 +95,19 @@ function HandleGlobalErrors(err: Error, req: Request, res: Response, next: NextF
   else if (err instanceof MongoError)
   {
     console.error(formatMongoError(err));
-  }else if(err instanceof Error){
+  } else if (err instanceof Error)
+  {
     console.error(formatError(err));
   }
-  else{
-    const errNever : never =err;
+  else
+  {
+    const errNever: never = err;
     console.error("error should be error, not never!");
   }
 
   res.status(status);
-  res.send(resBody);
+  if(resBody)
+    res.json(resBody);
+  else
+    res.end();
 } 
