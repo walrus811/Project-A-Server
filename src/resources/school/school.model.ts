@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb';
 
 interface School
 {
-  _Id?: ObjectId;
+  _id?: ObjectId;
   name: string;
 }
 
