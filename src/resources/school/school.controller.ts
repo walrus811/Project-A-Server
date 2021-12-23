@@ -51,7 +51,6 @@ export const createSchool: RequestHandler = async (req, res, next) =>
   }
 };
 
-
 export const getSchoolByName: RequestHandler = async (req, res, next) =>
 {
   const name = req.params.name;
@@ -111,7 +110,6 @@ export const updateSchoolByName: RequestHandler = async (req, res, next) =>
     next(error);
   }
 };
-
 
 export const deleteSchoolByName: RequestHandler = async (req, res, next) =>
 {
