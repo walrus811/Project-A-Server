@@ -7,6 +7,9 @@ import { formatError, formatMongoError } from './utils/format';
 import { MongoError } from 'mongodb';
 import { connect } from './db/mongodb';
 import schoolRouter from './resources/school/school.router';
+import lectureRouter from './resources/lecture/lecture.router';
+import vocaCategoryRouter from './resources/vocaCategory/vocaCategory.router';
+import studentRouter from './resources/student/student.router';
 import { setAppName, setMdb } from './utils/appVars';
 
 //Preconfig
@@ -23,12 +26,14 @@ app.use(morgan("dev"));
 
 app.get("/", async (req, res, next) =>
 {
-  res.status(200).json({ test: 123 });
+  res.status(200).json({ message: "글로벌 헬로우" });
 });
-
 
 //Router
 app.use('/api/school', schoolRouter);
+app.use('/api/lecture', lectureRouter);
+app.use('/api/vocaCategory', vocaCategoryRouter);
+app.use('/api/student', studentRouter);
 
 //Error Handle
 app.use(RouteNotFound);
