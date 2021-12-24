@@ -71,7 +71,7 @@ export async function start()
   }
 }
 
-/*------------------------- Function Declaration-------------------------*/
+/*------------------------- Private Function Declaration-------------------------*/
 
 function RouteNotFound(req: Request, res: Response, next: NextFunction)
 {
@@ -106,7 +106,7 @@ function HandleGlobalErrors(err: Error, req: Request, res: Response, next: NextF
   }
 
   res.status(status);
-  if(resBody)
+  if (resBody)
     res.json(resBody);
   else
     res.end();
