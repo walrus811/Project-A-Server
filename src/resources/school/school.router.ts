@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createSchool, deleteSchoolByName, getSchoolByName, getSchools, updateSchoolByName } from "./school.controller";
+import { createSchool, deleteSchoolByName, getSchools, updateSchoolByName } from "./school.controller";
 
 const router = Router();
 router
@@ -9,7 +9,6 @@ router
 
 router
   .route('/:name')
-  .get(getSchoolByName)
   .put(updateSchoolByName)
   .delete(deleteSchoolByName);
 

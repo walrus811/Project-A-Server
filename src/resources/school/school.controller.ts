@@ -1,9 +1,76 @@
-import { RequestHandler } from "express";
+import { query, RequestHandler } from "express";
+import { ParsedQs } from 'qs';
 import School from "./school.model";
 import { getMdb, getAppName } from "../../utils/appVars";
 import httpErrors from "http-errors";
+import Pagination from "../../utils/types/Pagination";
+import QueryField from "../../utils/types/QueryField";
+import { SchoolConditionField } from "./school.type";
+import { Filter, ObjectId, Sort } from "mongodb";
 
 const collectionName = "schools";
+
+function generateSchoolFilter(query: QueryField, condition: SchoolConditionField)
+{
+  let result: Filter<School> = {};
+
+  let ascend = query.ascend ? query.ascend : 1;
+  if (query.lastId)
+  {
+    if (query.sortBy)
+    {
+      result.$and = [
+        {
+          $or: [
+            { [query.sortBy]: ascend == 1 ? { $gt: query.lastItem } : { $lt: query.lastItem } },
+            {
+              [query.sortBy]: query.lastItem,
+              _id: ascend == 1 ? { $gt: new ObjectId(query.lastId) } : { $lt: new ObjectId(query.lastId) }
+            }
+          ]
+        }
+      ];
+    }
+    else
+    {
+      result.$and = [
+        {
+          $or: [
+            {
+              _id: ascend == 1 ? { $gt: new ObjectId(query.lastId) } : { $lt: new ObjectId(query.lastId) }
+            }
+          ]
+        }
+      ];
+    }
+
+
+    if (Object.keys(condition).length > 0)
+    {
+      result.$and.push(condition);
+    }
+  }
+  else
+  {
+    result = condition;
+  }
+  return result;
+}
+
+function generateSchoolSort(query: QueryField)
+{
+  let sort: Sort = {};
+
+  if (query.sortBy)
+  {
+    let ascend = query.ascend ? query.ascend : 1;
+    sort = {
+      [query.sortBy]: ascend,
+      _id: ascend
+    };
+  }
+  return sort;
+}
 
 export const getSchools: RequestHandler = async (req, res, next) =>
 {
@@ -12,9 +79,28 @@ export const getSchools: RequestHandler = async (req, res, next) =>
     const client = getMdb(req);
     const db = client.db(getAppName(req));
     const schools = db.collection<School>(collectionName);
-    const findCursor = schools.find<School>({}, { projection: { _id: 0 } });
-    const schoolList = (await findCursor.toArray()).map(x => x.name);
-    res.status(200).json({ data: schoolList });
+
+    const queryField = generateQueryField(req.query);
+    if (queryField.lastId)
+    {
+
+      const lastItem = await schools.findOne({ _id: new ObjectId(queryField.lastId) });
+      if (lastItem == null)
+        return next(httpErrors(400, `last id, ${queryField.lastId} is not valid.`));
+      queryField.lastItem = lastItem.name;
+    }
+
+    const conditionField = generateSchoolConditionField(req.query);
+    const filter = generateSchoolFilter(queryField, conditionField);
+    const sort = generateSchoolSort(queryField);
+    const limit = queryField.limit;
+
+
+    const findCursor = limit ? schools.find<School>(filter).sort(sort).limit(limit) : schools.find<School>(filter).sort(sort);
+    const schoolList = (await findCursor.toArray());
+    const count = schoolList.length;
+    const pagination: Pagination = { lastId: schoolList.length > 0 ? schoolList[count - 1]._id.toString() : null, count };
+    res.status(200).json({ data: schoolList, pagination });
   }
   catch (error)
   {
@@ -51,8 +137,9 @@ export const createSchool: RequestHandler = async (req, res, next) =>
   }
 };
 
-export const getSchoolByName: RequestHandler = async (req, res, next) =>
+export const getSchoolById: RequestHandler = async (req, res, next) =>
 {
+  const queryField = generateQueryField(req.query);
   const name = req.params.name;
 
   try
@@ -140,3 +227,33 @@ export const deleteSchoolByName: RequestHandler = async (req, res, next) =>
     next(error);
   }
 };
+
+/*------------------------- Private Function Declaration-------------------------*/
+
+function generateQueryField(query: ParsedQs)
+{
+  const result: QueryField = {};
+
+  if ("limit" in query && typeof query.limit === "string")
+    result.limit = parseInt(query.limit);
+  if ("lastId" in query && typeof query.lastId === "string")
+    result.lastId = query.lastId;
+  if ("sortBy" in query && typeof query.sortBy === "string")
+    result.sortBy = query.sortBy;
+  if ("ascend" in query && typeof query.ascend === "string")
+  {
+    let parsed = parseInt(query.ascend);
+    if (parsed)
+      result.ascend = parsed > 0 ? 1 : -1;
+  }
+  return result;
+}
+
+function generateSchoolConditionField(query: ParsedQs)
+{
+  const result: SchoolConditionField = {};
+
+  if ("name" in query && typeof query.name === "string")
+    result.name = new RegExp(`${query.name}`);
+  return result;
+}
