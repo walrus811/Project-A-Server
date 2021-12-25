@@ -4,7 +4,7 @@ export interface Lecture
 {
   _id: ObjectId;
   name: string;
-  description : string;
+  description: string;
   startDate: Date;
   endDate: Date;
 }
