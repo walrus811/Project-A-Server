@@ -18,7 +18,7 @@ export function stripSlashIdFromDocument<T extends { _id: ObjectId; }>(data: T)
     if (key == "_id")
       result.id = data._id.toString();
     else
-      result.key = data[key];
+      result[key] = data[key];
   }
   return result;
 }
