@@ -20,16 +20,17 @@ app.disable('x-powered-by');
 
 //Middle
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: process.env.REQ_BODY_SIZE_LIMIT || "100kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
 app.get("/", async (req, res, next) =>
 {
-  res.status(200).json({ message: "글로벌 헬로우" });
+  res.status(200).json({
+    message: "글로벌 헬로우"
+  });
 });
 
-//Router
 app.use('/api/school', schoolRouter);
 app.use('/api/lecture', lectureRouter);
 app.use('/api/vocaCategory', vocaCategoryRouter);
