@@ -1,3 +1,4 @@
 PORT=3000
 MDB_URL=mongodb://root:12345@localhost:27017/
 NODE_ENV=development
+REQ_BODY_SIZE_LIMIT=2mb
