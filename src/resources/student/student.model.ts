@@ -29,13 +29,6 @@ export interface StudentVocaTest
 {
   startDate: Date;
   endDate: Date;
-  lectureId: ObjectId;
-  attend: boolean;
-  homework: boolean;
-  correctTestCount: number;
-  wholeTestCount: number;
-  description1: string;
-  description2: string;
   vocaList: TestVoca[];
 }
 
