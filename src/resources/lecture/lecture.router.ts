@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { isValidObjectId } from "../../utils/middlewares/isValidObjectId";
 import lectrueController from "./lecture.controller";
-import { createLectureConditionQuery, createQueryFieldsFromBody, createQueryFieldsFromQuery, isValidBody } from "./lecture.middleware";
+import { createLectureConditionQuery, isValidBody } from "./lecture.middleware";
+import {createQueryFieldsFromQuery,createQueryFieldsFromBody} from "../../utils/middlewares/createQueryField";
 
 const router = Router();
 

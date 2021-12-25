@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { QueryField } from "../types/Types";
 
-export function getCreateQueryFields(fromBody: boolean = false)
+function getCreateQueryFields(fromBody: boolean = false)
 {
   const handler: RequestHandler = async function (req, res, next)
   {
@@ -25,4 +25,5 @@ export function getCreateQueryFields(fromBody: boolean = false)
   return handler;
 }
 
-export default getCreateQueryFields;
+export const createQueryFieldsFromQuery = getCreateQueryFields(false);
+export const createQueryFieldsFromBody = getCreateQueryFields(true);

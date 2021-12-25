@@ -2,7 +2,6 @@ import { Request, RequestHandler } from "express";
 import { Filter, WithId } from "mongodb";
 import { getIsValidBody } from "../../utils/middlewares/isValidBody";
 import { Lecture } from "./lecture.model";
-import getCreateQueryFields from "../../utils/middlewares/createQueryField";
 
 const requiredFields = ["name", "startDate", "endDate"];
 
@@ -51,5 +50,3 @@ export const createLectureConditionQuery: RequestHandler = function (req, res, n
 };
 
 export const isValidBody = getIsValidBody(requiredFields, convertDateFields);
-export const createQueryFieldsFromQuery = getCreateQueryFields(false);
-export const createQueryFieldsFromBody = getCreateQueryFields(true);

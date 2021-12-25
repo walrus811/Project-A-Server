@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { isValidObjectId } from "../../utils/middlewares/isValidObjectId";
 import schoolController from "./school.controller";
-import { createQueryFieldsFromBody, createQueryFieldsFromQuery, createSchoolConditionQuery, isValidBody } from "./school.middleware";
+import { createSchoolConditionQuery, isValidBody } from "./school.middleware";
+import { createQueryFieldsFromQuery, createQueryFieldsFromBody } from "../../utils/middlewares/createQueryField";
 
 const router = Router();
 router
