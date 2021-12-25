@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { Filter, WithId } from "mongodb";
-import { getIsValidBody } from "src/utils/middlewares/isValidBody";
+import { getIsValidBody } from "../../utils/middlewares/isValidBody";
 import { VocaCategory } from "./vocaCategory.model";
 
 const requiredFields = ["name"];

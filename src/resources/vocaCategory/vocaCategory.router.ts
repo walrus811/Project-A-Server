@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { isValidObjectId } from "src/utils/middlewares/isValidObjectId";
+import { isValidObjectId } from "../../utils/middlewares/isValidObjectId";
 import vocaCategoryController from "./vocaCategory.controller";
 import { createQueryFieldsFromQuery, createQueryFieldsFromBody } from "../../utils/middlewares/createQueryField";
 import { createVocaCategoryConditionQuery, isValidBody } from "./vocaCategory.middleware";
