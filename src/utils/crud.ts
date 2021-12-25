@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import httpErrors from "http-errors";
-import { Condition, Filter, ObjectId, Sort, WithId } from "mongodb";
+import { Condition, Document, Filter, ObjectId, Sort, WithId } from "mongodb";
 import { getMdb, getAppName } from "./appVars";
 import { stripSlashIdFromDocument } from "./format";
 import { Pagination, QueryField } from "../utils/types/Types";
@@ -41,9 +41,10 @@ function getItems<T extends { _id: ObjectId; }>(collectionName: string)
 
       const filter = generateFilter<T>(queryField, [], lastItemSortValue);
       const sort = generateSort(queryField);
+      const projection = generateProjection(queryField);
       const limit = queryField.limit;
 
-      const findCursor = limit ? collection.find<T>(filter).sort(sort).limit(limit > 0 ? limit : 0) : collection.find<T>(filter).sort(sort);
+      const findCursor = limit ? collection.find<T>(filter, { projection }).sort(sort).limit(limit > 0 ? limit : 0) : collection.find<T>(filter, { projection }).sort(sort);
       const itemList = (await findCursor.toArray());
       const count = itemList.length;
       const pagination: Pagination = { lastId: itemList.length > 0 ? itemList[count - 1]._id.toString() : null, count };
@@ -82,9 +83,10 @@ function createQuery<T extends { _id: ObjectId; }>(collectionName: string)
 
       const filter = generateFilter<T>(queryField, queryConditions, lastItemSortValue);
       const sort = generateSort(queryField);
+      const projection = generateProjection(queryField);
       const limit = queryField.limit;
 
-      const findCursor = limit ? collection.find<T>(filter).sort(sort).limit(limit > 0 ? limit : 0) : collection.find<T>(filter).sort(sort);
+      const findCursor = limit ? collection.find<T>(filter, { projection }).sort(sort).limit(limit > 0 ? limit : 0) : collection.find<T>(filter, { projection }).sort(sort);
       const itemList = (await findCursor.toArray());
       const count = itemList.length;
       const pagination: Pagination = { lastId: itemList.length > 0 ? itemList[count - 1]._id.toString() : null, count };
@@ -287,4 +289,21 @@ function generateSort(query: QueryField)
   sort._id = ascend;
 
   return sort;
+}
+
+function generateProjection(query: QueryField)
+{
+  let projection: Document = {
+  };
+
+  if (query.except)
+  {
+    const exceptList = query.except.split("|");
+    for (const except of exceptList)
+    {
+      projection[except] = 0;
+    }
+  }
+
+  return projection;
 }

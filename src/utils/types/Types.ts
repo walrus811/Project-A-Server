@@ -10,4 +10,5 @@ export interface QueryField
   lastId?: string;
   sortBy?: string;
   ascend?: -1 | 1;
+  except?: string;
 }

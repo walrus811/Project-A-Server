@@ -19,6 +19,8 @@ function getCreateQueryFields(fromBody: boolean = false)
       if (parsed)
         queryField.ascend = parsed > 0 ? 1 : -1;
     }
+    if ("except" in body)
+      queryField.except = body.except;
     req.body.queryField = queryField;
     next();
   };
