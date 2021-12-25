@@ -11,9 +11,9 @@ export function createController<T extends { _id: ObjectId; }>(collectionName: s
     getItems: getItems<T>(collectionName),
     createQuery: createQuery<T>(collectionName),
     createItem: createItem<T>(collectionName, resourceName, uniqueField),
-    getByItemById: getByItemById<T>(collectionName),
-    updateByItemById: updateByItemById<T>(collectionName, resourceName),
-    deleteByItemById: deleteByItemById<T>(collectionName),
+    getItemById: getItemById<T>(collectionName),
+    updateItemById: updateItemById<T>(collectionName, resourceName, uniqueField),
+    deleteItemById: deleteItemById<T>(collectionName),
   };
 };
 
@@ -110,14 +110,14 @@ function createItem<T extends { _id: ObjectId; }>(collectionName: string, resour
 
       if (uniqueField)
       {
-        if (!req.body.uniqueField)
+        if (!req.body[uniqueField])
           return res.status(400).json({ message: `${uniqueField} must be in request body.` });
 
-        const filter: Filter<{ [key: string]: any; }> = { [uniqueField]: req.body.uniqueField };
+        const filter: Filter<{ [key: string]: any; }> = { [uniqueField]: req.body[uniqueField] };
 
         const existItem = await collection.findOne<T>(filter);
         if (existItem != null)
-          return res.status(409).setHeader("Content-Location", encodeURI(`/${resourceName}/${existItem._id.toString()}`)).json({ message: `${uniqueField} already exists.` });
+          return res.status(409).setHeader("Content-Location", encodeURI(`/${resourceName}/${existItem._id.toString()}`)).json({ message: `${req.body[uniqueField]} already exists.` });
       }
 
       const insertResult = await collection.insertOne(req.body);
@@ -135,7 +135,7 @@ function createItem<T extends { _id: ObjectId; }>(collectionName: string, resour
   return handler;
 };
 
-function getByItemById<T extends { _id: ObjectId; }>(collectionName: string)
+function getItemById<T extends { _id: ObjectId; }>(collectionName: string)
 {
   const handler: RequestHandler = async function (req, res, next)
   {
@@ -161,7 +161,7 @@ function getByItemById<T extends { _id: ObjectId; }>(collectionName: string)
   return handler;
 }
 
-function updateByItemById<T extends { _id: ObjectId; }>(collectionName: string, resourceName: string)
+function updateItemById<T extends { _id: ObjectId; }>(collectionName: string, resourceName: string, uniqueField: string | null)
 {
   const handler: RequestHandler = async function (req, res, next)
   {
@@ -172,6 +172,19 @@ function updateByItemById<T extends { _id: ObjectId; }>(collectionName: string, 
       const client = getMdb(req);
       const db = client.db(getAppName(req));
       const collection = db.collection<T>(collectionName);
+
+      if (uniqueField)
+      {
+        if (!req.body[uniqueField])
+          return res.status(400).json({ message: `${uniqueField} must be in request body.` });
+
+        const filter: Filter<{ [key: string]: any; }> = { [uniqueField]: req.body[uniqueField] };
+
+        const existItem = await collection.findOne<T>(filter);
+        if (existItem != null)
+          return res.status(409).setHeader("Content-Location", encodeURI(`/${resourceName}/${existItem._id.toString()}`)).json({ message: `${req.body[uniqueField]} already exists.` });
+      }
+
       const item = await collection.findOne<T>({ _id });
       if (item == null)
         return res.status(404).json({ message: `there's no item, ${req.params.id}` });
@@ -197,7 +210,7 @@ function updateByItemById<T extends { _id: ObjectId; }>(collectionName: string, 
   return handler;
 }
 
-function deleteByItemById<T extends { _id: ObjectId; }>(collectionName: string)
+function deleteItemById<T extends { _id: ObjectId; }>(collectionName: string)
 {
   const handler: RequestHandler = async function (req, res, next)
   {

@@ -8,5 +8,3 @@ export interface Lecture
   startDate: Date;
   endDate: Date;
 }
-
-export interface LectureQuery extends Lecture, QueryField{}

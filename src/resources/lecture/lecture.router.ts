@@ -12,9 +12,9 @@ router
 
 router
   .route('/:id')
-  .get(isValidObjectId, lectrueController.getByItemById)
-  .put(isValidObjectId, isValidBody, lectrueController.updateByItemById)
-  .delete(isValidObjectId, lectrueController.deleteByItemById);
+  .get(isValidObjectId, lectrueController.getItemById)
+  .put(isValidObjectId, isValidBody, lectrueController.updateItemById)
+  .delete(isValidObjectId, lectrueController.deleteItemById);
 
 router
   .route('/query')

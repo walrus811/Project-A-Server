@@ -1,9 +1,7 @@
 import { ObjectId } from 'mongodb';
 
-interface School
+export interface School
 {
   _id: ObjectId;
   name: string;
 }
-
-export default School;

@@ -1,17 +1,22 @@
 import { Router } from "express";
 import { isValidObjectId } from "../../utils/middlewares/isValidObjectId";
-import { createSchool, deleteSchoolById, getSchoolById, getSchools, updateSchoolById } from "./school.controller";
+import schoolController from "./school.controller";
+import { createQueryFieldsFromBody, createQueryFieldsFromQuery, createSchoolConditionQuery, isValidBody } from "./school.middleware";
 
 const router = Router();
 router
   .route('/')
-  .get(getSchools)
-  .post(createSchool);
+  .get(createQueryFieldsFromQuery, schoolController.getItems)
+  .post(isValidBody, schoolController.createItem);
 
 router
   .route('/:id')
-  .get(isValidObjectId, getSchoolById)
-  .put(isValidObjectId, updateSchoolById)
-  .delete(isValidObjectId, deleteSchoolById);
+  .get(isValidObjectId, schoolController.getItemById)
+  .put(isValidObjectId, isValidBody, schoolController.updateItemById)
+  .delete(isValidObjectId, schoolController.deleteItemById);
+
+router
+  .route('/query')
+  .post(createQueryFieldsFromBody, createSchoolConditionQuery, schoolController.createQuery);
 
 export default router;
