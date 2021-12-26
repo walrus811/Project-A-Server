@@ -10,26 +10,23 @@ export interface Student
   phone2: number;
   description: string;
   retire: boolean;
-  lectureList: StudentLecture[];
-  vocaTestList: StudentVocaTest[];
+  lectureList: LectureInfo[];
 }
 
-export interface StudentLecture
+export interface LectureInfo
 {
   lectureId: ObjectId;
+  name: string;
+  description: string;
+  startDate: Date;
+  endDate: Date;
   attend: boolean;
   homework: boolean;
   correctTestCount: number;
   wholeTestCount: number;
   description1: string;
   description2: string;
-}
-
-export interface StudentVocaTest
-{
-  startDate: Date;
-  endDate: Date;
-  vocaList: TestVoca[];
+  vocaTestList: TestVoca[];
 }
 
 export interface TestVoca
@@ -38,6 +35,6 @@ export interface TestVoca
   meaning: string;
   category: ObjectId;
   subCategory: string;
-  synonums: string;
+  synonyms: string;
   correctCount: number;
 }

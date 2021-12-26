@@ -31,6 +31,7 @@ app.get("/", async (req, res, next) =>
   });
 });
 
+//Router
 app.use('/api/school', schoolRouter);
 app.use('/api/lecture', lectureRouter);
 app.use('/api/vocaCategory', vocaCategoryRouter);
@@ -46,10 +47,7 @@ export async function start()
   try
   {
     if (!url)
-    {
-      console.error("There's no mdb url, please check server env!");
-      return;
-    }
+      return console.error("There's no mdb url, please check server env!");
 
     const appName = require('../package.json').name;
     setAppName(app, appName);

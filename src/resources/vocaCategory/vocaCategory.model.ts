@@ -13,5 +13,5 @@ export interface Voca
   spell: string;
   meaning: string;
   subCategory: string;
-  synonums: string;
+  synonyms: string;
 }
