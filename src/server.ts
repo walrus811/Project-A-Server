@@ -10,7 +10,9 @@ import schoolRouter from './resources/school/school.router';
 import lectureRouter from './resources/lecture/lecture.router';
 import vocaCategoryRouter from './resources/vocaCategory/vocaCategory.router';
 import studentRouter from './resources/student/student.router';
-import { setAppName, setMdb } from './utils/appVars';
+import { setAccessSecret, setAccessTokenLife, setAppName, setHashSecret, setMdb, setRefreshSecret, setRefreshTokenLife } from './utils/appVars';
+import cookieParser from 'cookie-parser';
+import { signin, signup } from './utils/middlewares/auth';
 
 //Preconfig
 dotenv.config();
@@ -22,6 +24,7 @@ app.disable('x-powered-by');
 app.use(cors());
 app.use(express.json({ limit: process.env.REQ_BODY_SIZE_LIMIT || "100kb" }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(morgan("dev"));
 
 app.get("/", async (req, res, next) =>
@@ -30,6 +33,11 @@ app.get("/", async (req, res, next) =>
     message: "글로벌 헬로우"
   });
 });
+
+//auth
+
+app.post('/signin', signin);
+app.post('/signup', signup);
 
 //Router
 app.use('/api/school', schoolRouter);
@@ -46,6 +54,31 @@ export async function start()
   const url = process.env.MDB_URL;
   try
   {
+    if (!process.env.HASH_SECRET)
+      return console.error("no specified hash secret!");
+
+    setHashSecret(app, process.env.HASH_SECRET);
+
+    if (!process.env.JWT_ACCESS_SECRET ||
+      !process.env.JWT_REFRESH_SECRET)
+      return console.error("no specified secret!");
+
+    setAccessSecret(app, process.env.JWT_ACCESS_SECRET);
+    setRefreshSecret(app, process.env.JWT_REFRESH_SECRET);
+
+    if (!process.env.JWT_ACCESS_TOKEN_LIFE ||
+      !process.env.JWT_REFRESH_TOKEN_LIFE)
+      return console.error("no specified token life!");
+
+    const accessTokenLife = parseInt(process.env.JWT_ACCESS_TOKEN_LIFE);
+    const refreshTokenLife = parseInt(process.env.JWT_REFRESH_TOKEN_LIFE);
+
+    if (!accessTokenLife || !refreshTokenLife)
+      return console.error("no specified token life value!");
+
+    setAccessTokenLife(app, accessTokenLife);
+    setRefreshTokenLife(app, refreshTokenLife);
+
     if (!url)
       return console.error("There's no mdb url, please check server env!");
 
