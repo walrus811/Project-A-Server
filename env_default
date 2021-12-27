@@ -2,3 +2,6 @@ PORT=3000
 MDB_URL=mongodb://root:12345@localhost:27017/
 NODE_ENV=development
 REQ_BODY_SIZE_LIMIT=2mb
+JWT_ACCESS_SECRET=0f26de9e4cc94bd065d40b3ec785f4c2
+JWT_REQUEST_SECRET=c2hlIGxvdmVzIHlvdQ==
+SMTP_URL=smtps://username:password@smtp.example.com/?pool=true
