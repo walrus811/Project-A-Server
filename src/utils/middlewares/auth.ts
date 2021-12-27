@@ -1,8 +1,9 @@
 import { RequestHandler } from "express";
 import { User } from "src/resources/users/user.model";
 import { getAccessSecret, getAccessTokenLife, getAppName, getHashSecret, getMdb, getRefreshSecret, getRefreshTokenLife } from "../appVars";
-import jwt from 'jsonwebtoken';
+import jwt, { JsonWebTokenError } from 'jsonwebtoken';
 import md5 from "md5";
+import { access } from "fs";
 
 
 export const signin: RequestHandler = async (req, res, next) =>
@@ -47,7 +48,7 @@ export const signin: RequestHandler = async (req, res, next) =>
         expiresIn: accessTokenLife
       });
 
-      return res.status(201).cookie("token", accessToken, { secure: process.env.NODE_ENV === "production", httpOnly: true }).end();
+      return res.status(201).cookie("token", accessToken, { signed: true, secure: process.env.NODE_ENV === "production", httpOnly: true }).end();
     }
     else
       next(new Error(`updateOne with refreshToken(${refreshToken}) can't be done with some reasons. please check the DB.`));
@@ -102,7 +103,7 @@ export const signup: RequestHandler = async (req, res, next) =>
         expiresIn: accessTokenLife
       });
 
-      return res.status(201).cookie("token", accessToken, { secure: process.env.NODE_ENV === "production", httpOnly: true }).end();
+      return res.status(201).cookie("token", accessToken, { signed: true, secure: process.env.NODE_ENV === "production", httpOnly: true }).end();
     }
     else
       next(new Error(`insertOne({${JSON.stringify(insertBody)}}) can't be done with some reasons. please check the DB.`));
@@ -117,10 +118,34 @@ export const checkAuthToken: RequestHandler = async (req, res, next) =>
 {
   try
   {
+    const accessToken = req.signedCookies.token;
+    if (!accessToken || typeof accessToken !== "string")
+      return res.status(401).end();
 
+    const accessSecret = getAccessSecret(req);
+    const jwtPayload = jwt.verify(accessToken, accessSecret);
+
+    if (typeof jwtPayload === "string")
+      return res.status(401).end();
+
+    if (!jwtPayload.user)
+      return res.status(401).end();
+
+    const client = getMdb(req);
+    const db = client.db(getAppName(req));
+    const userCollection = db.collection<User>("users");
+
+    const existUser = await userCollection.findOne({ email: jwtPayload.user }, { projection: { password: 0 } });
+    if (existUser != null)
+      return res.status(401).end();
+
+    res.locals.user = existUser;
+    next();
   }
   catch (error)
   {
+    if (error instanceof JsonWebTokenError)
+      return res.status(401).end();
     next(error);
   }
 };
