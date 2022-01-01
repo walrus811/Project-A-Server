@@ -10,5 +10,5 @@ export interface QueryField
   lastId?: string;
   sortBy?: string;
   ascend?: -1 | 1;
-  except?: string;
+  except?: string; // "name" or "name"|"startDate"|"something"
 }
