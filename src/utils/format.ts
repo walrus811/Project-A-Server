@@ -1,4 +1,7 @@
+import { Request } from "express";
+import md5 from "md5";
 import { MongoError, ObjectId } from "mongodb";
+import { getHashSecret } from "./appVars";
 
 export function formatError(err: Error)
 {
@@ -21,4 +24,8 @@ export function stripSlashIdFromDocument<T extends { _id: ObjectId; }>(data: T)
       result[key] = data[key];
   }
   return result;
+}
+
+export function generatePasswordHash(password : string, req : Request){
+  return md5(password + getHashSecret(req));
 }
