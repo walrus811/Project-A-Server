@@ -31,16 +31,6 @@ export function setAccessSecret(app: Application, secret: string)
   app.set("accessSecret", secret);
 }
 
-export function getRefreshSecret(req: Request): string
-{
-  return req.app.get("refreshSecret");
-}
-
-export function setRefreshSecret(app: Application, secret: string)
-{
-  app.set("refreshSecret", secret);
-}
-
 export function getAccessTokenLife(req: Request): number
 {
   return req.app.get("accessTokenLife");
@@ -49,16 +39,6 @@ export function getAccessTokenLife(req: Request): number
 export function setAccessTokenLife(app: Application, lifeSecond: number)
 {
   app.set("accessTokenLife", lifeSecond);
-}
-
-export function getRefreshTokenLife(req: Request): number
-{
-  return req.app.get("refreshTokenLife");
-}
-
-export function setRefreshTokenLife(app: Application, lifeSecond: number)
-{
-  app.set("refreshTokenLife", lifeSecond);
 }
 
 export function getHashSecret(req: Request): string

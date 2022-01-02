@@ -1,10 +1,16 @@
 import { RequestHandler } from "express";
 import { User } from "src/resources/users/user.model";
-import { getAccessSecret, getAccessTokenLife, getAppName, getHashSecret, getMdb, getRefreshSecret, getRefreshTokenLife } from "../appVars";
+import { getAccessSecret, getAccessTokenLife, getAppName, getHashSecret, getMdb } from "../appVars";
 import jwt, { JsonWebTokenError } from 'jsonwebtoken';
-import md5 from "md5";
-import { access } from "fs";
+import { generatePasswordHash } from "../format";
 
+export const createToken = (email: string, secret: string, tokenLife: number) =>
+{
+  return jwt.sign({ user: email }, secret, {
+    algorithm: "HS256",
+    expiresIn: tokenLife
+  });
+};
 
 export const signin: RequestHandler = async (req, res, next) =>
 {
@@ -18,7 +24,7 @@ export const signin: RequestHandler = async (req, res, next) =>
 
     const email = req.body.email;
     const password = req.body.password;
-    const passwordHash = md5(password + getHashSecret(req));
+    const passwordHash = generatePasswordHash(password, req);
 
     const client = getMdb(req);
     const db = client.db(getAppName(req));
@@ -31,27 +37,11 @@ export const signin: RequestHandler = async (req, res, next) =>
     if (existUser.password !== passwordHash)
       return res.status(401).json({ message: "You did input wrong email or password" });
 
-    const refreshSecret = getRefreshSecret(req);
-    const refreshTokenLife = getRefreshTokenLife(req);
-    const refreshToken = jwt.sign({ user: email }, refreshSecret, {
-      algorithm: "HS256",
-      expiresIn: refreshTokenLife
-    });
+    const tokenSecet = getAccessSecret(req);
+    const tokenLife = getAccessTokenLife(req);
+    const token = createToken(email, tokenSecet, tokenLife);
 
-    const updateResult = await userCollection.updateOne({ _id: existUser._id }, { $set: { refreshToken } });
-    if (updateResult.modifiedCount > 0)
-    {
-      const accessSecret = getAccessSecret(req);
-      const accessTokenLife = getAccessTokenLife(req);
-      const accessToken = jwt.sign({ user: email }, accessSecret, {
-        algorithm: "HS256",
-        expiresIn: accessTokenLife
-      });
-
-      return res.status(201).cookie("token", accessToken, { signed: true, secure: process.env.NODE_ENV === "production", httpOnly: true }).end();
-    }
-    else
-      next(new Error(`updateOne with refreshToken(${refreshToken}) can't be done with some reasons. please check the DB.`));
+    return res.status(200).cookie("token", token, { signed: true, secure: process.env.NODE_ENV === "production", httpOnly: true }).end();
   }
   catch (error)
   {
@@ -71,7 +61,8 @@ export const signup: RequestHandler = async (req, res, next) =>
 
     const email = req.body.email;
     const password = req.body.password;
-    const passwordHash = md5(password + getHashSecret(req));
+    const passwordHash = generatePasswordHash(password, req);
+    
     const client = getMdb(req);
     const db = client.db(getAppName(req));
     const userCollection = db.collection<Partial<User>>("users");
@@ -80,30 +71,19 @@ export const signup: RequestHandler = async (req, res, next) =>
     if (existUser != null)
       return res.status(409).json({ message: `The email already is` });
 
-    const refreshSecret = getRefreshSecret(req);
-    const refreshTokenLife = getRefreshTokenLife(req);
-    const refreshToken = jwt.sign({ user: email }, refreshSecret, {
-      algorithm: "HS256",
-      expiresIn: refreshTokenLife
-    });
-
     const insertBody: Partial<User> = {
       email,
       password: passwordHash,
-      refreshToken
     };
 
     const insertResult = await userCollection.insertOne(insertBody);
     if (insertResult.acknowledged)
     {
-      const accessSecret = getAccessSecret(req);
-      const accessTokenLife = getAccessTokenLife(req);
-      const accessToken = jwt.sign({ user: email }, accessSecret, {
-        algorithm: "HS256",
-        expiresIn: accessTokenLife
-      });
+      const tokenSecet = getAccessSecret(req);
+      const tokenLife = getAccessTokenLife(req);
+      const token = createToken(email, tokenSecet, tokenLife);
 
-      return res.status(201).cookie("token", accessToken, { signed: true, secure: process.env.NODE_ENV === "production", httpOnly: true }).end();
+      return res.status(201).cookie("token", token, { signed: true, secure: process.env.NODE_ENV === "production", httpOnly: true }).end();
     }
     else
       next(new Error(`insertOne({${JSON.stringify(insertBody)}}) can't be done with some reasons. please check the DB.`));
@@ -136,7 +116,7 @@ export const checkAuthToken: RequestHandler = async (req, res, next) =>
     const userCollection = db.collection<User>("users");
 
     const existUser = await userCollection.findOne({ email: jwtPayload.user }, { projection: { password: 0 } });
-    if (existUser != null)
+    if (existUser == null)
       return res.status(401).end();
 
     res.locals.user = existUser;
