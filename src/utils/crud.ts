@@ -118,7 +118,7 @@ function createItem<T extends { _id: ObjectId; }>(collectionName: string, resour
         const filter: Filter<{ [key: string]: any; }> = { [uniqueField]: req.body[uniqueField] };
 
         const existItem = await collection.findOne<T>(filter);
-        if (existItem != null)
+        if (existItem?._id === _id)
           return res.status(409).setHeader("Content-Location", encodeURI(`/${resourceName}/${existItem._id.toString()}`)).json({ message: `${req.body[uniqueField]} already exists.` });
       }
 
