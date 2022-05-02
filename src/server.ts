@@ -122,17 +122,21 @@ function HandleGlobalErrors(err: Error, req: Request, res: Response, next: NextF
   let status = 500;
   if (err instanceof HttpError)
   {
-    const resBody = {
-    } as { message?: string; };
+    if (err.status !== 404)
+    {
+      resBody = {
+      } as { message?: string; };
 
-    if (err.expose)
-      resBody.message = err.message;
+      if (err.expose)
+        resBody.message = err.message;
+    }
     status = err.status;
   }
   else if (err instanceof MongoError)
   {
     console.error(formatMongoError(err));
-  } else if (err instanceof Error)
+  }
+  else if (err instanceof Error)
   {
     console.error(formatError(err));
   }
