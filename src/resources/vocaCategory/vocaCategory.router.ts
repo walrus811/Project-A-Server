@@ -14,8 +14,8 @@ router
 router
   .route('/:id')
   .get(isValidObjectId, vocaCategoryController.getItemById)
-  .put(isValidObjectId, isValidBody, vocaCategoryController.updateItemById)
-  .delete(isValidObjectId, vocaCategoryController.deleteItemById);
+  .put(isValidObjectId, isValidBody, vocaCategoryController.checkUniqueField, vocaCategoryController.updateItemById)
+  .delete(isValidObjectId, vocaCategoryController.checkItemExists, vocaCategoryController.deleteItemById);
 
 router
   .route('/query')

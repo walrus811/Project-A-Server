@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import httpErrors from "http-errors";
-import { Condition, Document, Filter, ObjectId, Sort, WithId } from "mongodb";
+import { Condition, Document, Filter, ObjectId, Sort, UpdateFilter, WithId } from "mongodb";
 import { getMdb, getAppName } from "./appVars";
 import { stripSlashIdFromDocument } from "./format";
 import { Pagination, QueryField } from "../utils/types/Types";
@@ -13,8 +13,11 @@ export function createController<T extends { _id: ObjectId; }>(collectionName: s
     createQuery: createQuery<T>(collectionName, exceptFieldList),
     createItem: createItem<T>(collectionName, resourceName, uniqueField),
     getItemById: getItemById<T>(collectionName, exceptFieldList),
-    updateItemById: updateItemById<T>(collectionName, resourceName, uniqueField),
+    updateItemById: updateItemById<T>(collectionName, resourceName),
     deleteItemById: deleteItemById<T>(collectionName),
+    checkItemExists: checkItemExists<T>(collectionName),
+    checkUniqueField: checkUniqueField<T>(collectionName, resourceName, uniqueField),
+    unsetItemProperty: unsetItemProperty<T>(collectionName, resourceName)
   };
 };
 
@@ -156,7 +159,7 @@ function getItemById<T extends { _id: ObjectId; }>(collectionName: string, excep
       const db = client.db(getAppName(req));
       const collection = db.collection<T>(collectionName);
       const projection = generateProjection({}, exceptFieldList);
-      
+
       const item = await collection.findOne<T>({ _id }, { projection });
       if (item === null)
         return res.status(404).json({ message: `there's no item include ${req.params.id}.` });
@@ -172,7 +175,7 @@ function getItemById<T extends { _id: ObjectId; }>(collectionName: string, excep
   return handler;
 }
 
-function updateItemById<T extends { _id: ObjectId; }>(collectionName: string, resourceName: string, uniqueField: string | null)
+function updateItemById<T extends { _id: ObjectId; }>(collectionName: string, resourceName: string)
 {
   const handler: RequestHandler = async function (req, res, next)
   {
@@ -183,22 +186,6 @@ function updateItemById<T extends { _id: ObjectId; }>(collectionName: string, re
       const client = getMdb(req);
       const db = client.db(getAppName(req));
       const collection = db.collection<T>(collectionName);
-
-      if (uniqueField)
-      {
-        if (!req.body[uniqueField])
-          return res.status(400).json({ message: `${uniqueField} must be in request body.` });
-
-        const filter: Filter<{ [key: string]: any; }> = { [uniqueField]: req.body[uniqueField] };
-
-        const existItem = await collection.findOne<T>(filter);
-        if (existItem != null)
-          return res.status(409).setHeader("Content-Location", encodeURI(`/${resourceName}/${existItem._id.toString()}`)).json({ message: `${req.body[uniqueField]} already exists.` });
-      }
-
-      const item = await collection.findOne<T>({ _id });
-      if (item == null)
-        return res.status(404).json({ message: `there's no item, ${req.params.id}` });
 
       const updateResult = await collection.updateOne(
         { _id },
@@ -227,15 +214,10 @@ function deleteItemById<T extends { _id: ObjectId; }>(collectionName: string)
   {
     try
     {
-      const _id = new ObjectId(req.params.id);
-
       const client = getMdb(req);
       const db = client.db(getAppName(req));
       const collection = db.collection<T>(collectionName);
-
-      const item = await collection.findOne<T>({ _id });
-      if (item == null)
-        return res.status(404).json({ message: `there's no item, ${req.params.id}` });
+      const _id = new ObjectId(req.params.id);
 
       const deleteResult = await collection.deleteOne({ _id });
       if (deleteResult.deletedCount > 0)
@@ -246,6 +228,106 @@ function deleteItemById<T extends { _id: ObjectId; }>(collectionName: string)
       {
         next(new Error(`deleteOne(${req.params.id}) can't be done with some reasons. please check the DB.`));
       }
+    }
+    catch (error)
+    {
+      next(error);
+    }
+  };
+
+  return handler;
+}
+
+function checkUniqueField<T extends { _id: ObjectId; }>(collectionName: string, resourceName: string, uniqueField: string | null)
+{
+  const handler: RequestHandler = async function (req, res, next)
+  {
+    try
+    {
+      const _id = new ObjectId(req.params.id);
+
+      const client = getMdb(req);
+      const db = client.db(getAppName(req));
+      const collection = db.collection<T>(collectionName);
+
+      if (uniqueField && req.body[uniqueField])
+      {
+        const filter: Filter<{ [key: string]: any; }> = { [uniqueField]: req.body[uniqueField] };
+
+        const existItem = await collection.findOne<T>(filter);
+        if (existItem && !existItem._id.equals(_id))
+          return res.status(409).setHeader("Content-Location", encodeURI(`/${resourceName}/${existItem._id.toString()}`)).json({ message: `${req.body[uniqueField]} already exists.` });
+      }
+
+      const item = await collection.findOne<T>({ _id });
+      if (item == null)
+        return res.status(404).json({ message: `there's no item, ${req.params.id}` });
+      res.locals.checkedItem = item;
+      next();
+    }
+    catch (error)
+    {
+      next(error);
+    }
+  };
+
+  return handler;
+}
+
+function checkItemExists<T extends { _id: ObjectId; }>(collectionName: string)
+{
+  const handler: RequestHandler = async function (req, res, next)
+  {
+    try
+    {
+      const client = getMdb(req);
+      const db = client.db(getAppName(req));
+      const collection = db.collection<T>(collectionName);
+      const _id = new ObjectId(req.params.id);
+
+      const item = await collection.findOne<T>({ _id });
+      if (item == null)
+        return res.status(404).json({ message: `there's no item, ${req.params.id}` });
+
+      res.locals.checkedItem = item;
+      next();
+    }
+    catch (error)
+    {
+      next(error);
+    }
+  };
+
+  return handler;
+}
+
+function unsetItemProperty<T extends { _id: ObjectId; }>(collectionName: string, resourceName: string)
+{
+  const handler: RequestHandler = async function (req, res, next)
+  {
+    try
+    {
+      const _id = new ObjectId(req.params.id);
+
+      const client = getMdb(req);
+      const db = client.db(getAppName(req));
+      const collection = db.collection<T>(collectionName);
+
+      const unset: UpdateFilter<T> = {};
+      const unsetProperty = res.locals.unsetProperty as string;
+      unset[unsetProperty] = "";
+
+      const updateResult = await collection.updateOne(
+        { _id },
+        {
+          "$unset": unset
+        }
+      );
+
+      if (updateResult.matchedCount > 0)
+        return res.status(204).setHeader("Content-Location", encodeURI(`/${resourceName}/${req.params.id}`)).end();
+      else
+        next(new Error(`updateOne({${req.params.id}},{${JSON.stringify(req.body)}}) can't be done with some reasons. please check the DB.`));
     }
     catch (error)
     {

@@ -14,8 +14,8 @@ router
 router
   .route('/:id')
   .get(isValidObjectId, studentController.getItemById)
-  .put(isValidObjectId, isValidBody, studentController.updateItemById)
-  .delete(isValidObjectId, studentController.deleteItemById);
+  .put(isValidObjectId, isValidBody, studentController.checkUniqueField, studentController.updateItemById)
+  .delete(isValidObjectId, studentController.checkItemExists, studentController.deleteItemById);
 
 router
   .route('/query')

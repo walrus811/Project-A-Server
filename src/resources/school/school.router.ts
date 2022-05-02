@@ -13,8 +13,8 @@ router
 router
   .route('/:id')
   .get(isValidObjectId, schoolController.getItemById)
-  .put(isValidObjectId, isValidBody, schoolController.updateItemById)
-  .delete(isValidObjectId, schoolController.deleteItemById);
+  .put(isValidObjectId, isValidBody, schoolController.checkUniqueField, schoolController.updateItemById)
+  .delete(isValidObjectId, schoolController.checkItemExists, schoolController.deleteItemById);
 
 router
   .route('/query')
