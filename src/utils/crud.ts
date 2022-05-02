@@ -4,20 +4,21 @@ import { Condition, Document, Filter, ObjectId, Sort, WithId } from "mongodb";
 import { getMdb, getAppName } from "./appVars";
 import { stripSlashIdFromDocument } from "./format";
 import { Pagination, QueryField } from "../utils/types/Types";
+import { isEmptyObject } from "./check";
 
-export function createController<T extends { _id: ObjectId; }>(collectionName: string, resourceName: string, uniqueField: string | null = null)
+export function createController<T extends { _id: ObjectId; }>(collectionName: string, resourceName: string, exceptFieldList: string[] = [], uniqueField: string | null = null)
 {
   return {
-    getItems: getItems<T>(collectionName),
-    createQuery: createQuery<T>(collectionName),
+    getItems: getItems<T>(collectionName, exceptFieldList),
+    createQuery: createQuery<T>(collectionName, exceptFieldList),
     createItem: createItem<T>(collectionName, resourceName, uniqueField),
-    getItemById: getItemById<T>(collectionName),
+    getItemById: getItemById<T>(collectionName, exceptFieldList),
     updateItemById: updateItemById<T>(collectionName, resourceName, uniqueField),
     deleteItemById: deleteItemById<T>(collectionName),
   };
 };
 
-function getItems<T extends { _id: ObjectId; }>(collectionName: string)
+function getItems<T extends { _id: ObjectId; }>(collectionName: string, exceptFieldList: string[])
 {
   const handler: RequestHandler = async function (req, res, next)
   {
@@ -41,7 +42,7 @@ function getItems<T extends { _id: ObjectId; }>(collectionName: string)
 
       const filter = generateFilter<T>(queryField, [], lastItemSortValue);
       const sort = generateSort(queryField);
-      const projection = generateProjection(queryField);
+      const projection = generateProjection(queryField, exceptFieldList);
       const limit = queryField.limit;
 
       const findCursor = limit ? collection.find<T>(filter, { projection }).sort(sort).limit(limit > 0 ? limit : 0) : collection.find<T>(filter, { projection }).sort(sort);
@@ -58,7 +59,7 @@ function getItems<T extends { _id: ObjectId; }>(collectionName: string)
   return handler;
 };
 
-function createQuery<T extends { _id: ObjectId; }>(collectionName: string)
+function createQuery<T extends { _id: ObjectId; }>(collectionName: string, exceptFieldList: string[])
 {
   const handler: RequestHandler = async function (req, res, next)
   {
@@ -83,8 +84,14 @@ function createQuery<T extends { _id: ObjectId; }>(collectionName: string)
 
       const filter = generateFilter<T>(queryField, queryConditions, lastItemSortValue);
       const sort = generateSort(queryField);
-      const projection = generateProjection(queryField);
+      const projection = generateProjection(queryField, exceptFieldList);
       const limit = queryField.limit;
+
+      if (isEmptyObject(filter))
+      {
+        const pagination: Pagination = { lastId: null, count: 0 };
+        return res.status(200).json({ data: [], pagination });
+      }
 
       const findCursor = limit ? collection.find<T>(filter, { projection }).sort(sort).limit(limit > 0 ? limit : 0) : collection.find<T>(filter, { projection }).sort(sort);
       const itemList = (await findCursor.toArray());
@@ -137,7 +144,7 @@ function createItem<T extends { _id: ObjectId; }>(collectionName: string, resour
   return handler;
 };
 
-function getItemById<T extends { _id: ObjectId; }>(collectionName: string)
+function getItemById<T extends { _id: ObjectId; }>(collectionName: string, exceptFieldList: string[])
 {
   const handler: RequestHandler = async function (req, res, next)
   {
@@ -148,7 +155,9 @@ function getItemById<T extends { _id: ObjectId; }>(collectionName: string)
       const client = getMdb(req);
       const db = client.db(getAppName(req));
       const collection = db.collection<T>(collectionName);
-      const item = await collection.findOne<T>({ _id });
+      const projection = generateProjection({}, exceptFieldList);
+      
+      const item = await collection.findOne<T>({ _id }, { projection });
       if (item === null)
         return res.status(404).json({ message: `there's no item include ${req.params.id}.` });
 
@@ -291,7 +300,7 @@ function generateSort(query: QueryField)
   return sort;
 }
 
-function generateProjection(query: QueryField)
+function generateProjection(query: QueryField, exceptFieldList: string[])
 {
   let projection: Document = {
   };
@@ -303,6 +312,11 @@ function generateProjection(query: QueryField)
     {
       projection[except] = 0;
     }
+  }
+
+  for (const except of exceptFieldList)
+  {
+    projection[except] = 0;
   }
 
   return projection;
