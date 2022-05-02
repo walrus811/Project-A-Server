@@ -21,7 +21,7 @@ function getCreateQueryFields(fromBody: boolean = false)
     }
     if ("except" in body)
       queryField.except = body.except;
-    req.body.queryField = queryField;
+    res.locals.queryField = queryField;
     next();
   };
   return handler;

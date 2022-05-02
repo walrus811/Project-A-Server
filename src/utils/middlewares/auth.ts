@@ -118,7 +118,7 @@ export const checkAuthToken: RequestHandler = async (req, res, next) =>
     const existUser = await userCollection.findOne({ email: jwtPayload.user }, { projection: { password: 0 } });
     if (existUser == null)
       return res.status(401).end();
-
+    //TODO - 체크
     res.locals.user = existUser;
     next();
   }

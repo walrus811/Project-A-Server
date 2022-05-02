@@ -45,7 +45,7 @@ export const createLectureConditionQuery: RequestHandler = function (req, res, n
       queryConditions.push({ startDate: { $gte: req.body.startDate, $lt: req.body.endDate } });
   }
 
-  req.body.queryConditions = queryConditions;
+  res.locals.queryConditions = queryConditions;
   next();
 };
 

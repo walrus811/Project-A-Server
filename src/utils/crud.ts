@@ -28,7 +28,7 @@ function getItems<T extends { _id: ObjectId; }>(collectionName: string, exceptFi
       const db = client.db(getAppName(req));
       const collection = db.collection<T>(collectionName);
 
-      const queryField = req.body.queryField as QueryField;
+      const queryField = res.locals.queryField as QueryField;
       let lastItemSortValue: any = null;
       if (queryField.lastId)
       {
@@ -69,8 +69,8 @@ function createQuery<T extends { _id: ObjectId; }>(collectionName: string, excep
       const db = client.db(getAppName(req));
       const collection = db.collection<T>(collectionName);
 
-      const queryField = req.body.queryField as QueryField;
-      const queryConditions: Filter<WithId<T>>[] = req.body.queryConditions;
+      const queryField = res.locals.queryField as QueryField;
+      const queryConditions: Filter<WithId<T>>[] = res.locals.queryConditions;
       let lastItemSortValue: any = null;
       if (queryField.lastId)
       {

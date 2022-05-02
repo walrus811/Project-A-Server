@@ -14,7 +14,7 @@ export const createSchoolConditionQuery: RequestHandler = function (req, res, ne
   if (bodyObject.hasOwnProperty("name"))
     queryConditions.push({ name: new RegExp(`${req.body.name}`) });
 
-  req.body.queryConditions = queryConditions;
+  res.locals.queryConditions = queryConditions;
   next();
 };
 

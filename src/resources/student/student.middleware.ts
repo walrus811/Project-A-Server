@@ -22,7 +22,7 @@ export const createStudentConditionQuery: RequestHandler = function (req, res, n
   if (bodyObject.hasOwnProperty("retire"))
     queryConditions.push({ retire: req.body.retire });
 
-  req.body.queryConditions = queryConditions;
+  res.locals.queryConditions = queryConditions;
   next();
 };
 export const isValidBody = getIsValidBody(requiredFields);
